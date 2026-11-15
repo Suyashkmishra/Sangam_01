@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "next lint",
     "seed": "npx tsx scripts/seed-users.ts",
-    "verify": "npx tsx scripts/verify-supabase.ts"
+    "reset-demo": "npx tsx scripts/reset-demo.ts",
+    "verify": "npx tsx scripts/verify-supabase.ts",
+    "test-acts": "npx tsx scripts/test-e2e-acts.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.2",

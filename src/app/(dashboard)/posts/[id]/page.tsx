@@ -248,21 +248,34 @@ export default function PostDetailPage() {
 
             {/* Connect Button (for Gurus viewing a Shishya's work) */}
             {isViewerGuru && isAuthorShishya && (
-              <div>
+              <div className="flex items-center gap-2">
                 {existingConnection ? (
-                  <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-white border border-parchment-border text-espresso/80">
-                    {existingConnection.status === "accepted" ? (
-                      <>
-                        <CheckCircle2 className="w-4 h-4 text-green-600" />
-                        <span className="text-green-800">Connection Accepted</span>
-                      </>
-                    ) : existingConnection.status === "pending" ? (
-                      <>
-                        <Clock className="w-4 h-4 text-amber-600 animate-pulse" />
-                        <span className="text-amber-800">Connection Pending</span>
-                      </>
-                    ) : (
-                      <span>Connection Declined</span>
+                  <div className="flex items-center gap-2">
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white border border-parchment-border text-espresso/80">
+                      {existingConnection.status === "accepted" ? (
+                        <>
+                          <CheckCircle2 className="w-4 h-4 text-green-600" />
+                          <span className="text-green-800">Connection Accepted</span>
+                        </>
+                      ) : existingConnection.status === "pending" ? (
+                        <>
+                          <Clock className="w-4 h-4 text-amber-600 animate-pulse" />
+                          <span className="text-amber-800">Connection Pending</span>
+                        </>
+                      ) : (
+                        <span>Connection Declined</span>
+                      )}
+                    </div>
+
+                    {/* Option to send an additional note on this specific creation */}
+                    {isGuruVerified && (
+                      <button
+                        onClick={() => setConnectModalOpen(true)}
+                        className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-copper/10 hover:bg-copper text-copper hover:text-white transition-all"
+                        title="Send another guidance note on this specific work"
+                      >
+                        + Send Note
+                      </button>
                     )}
                   </div>
                 ) : (
@@ -353,3 +366,4 @@ export default function PostDetailPage() {
     </div>
   );
 }
+

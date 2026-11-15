@@ -347,3 +347,4 @@ export default function AdminVerificationPage() {
     </div>
   );
 }
+

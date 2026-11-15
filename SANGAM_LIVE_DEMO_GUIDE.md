@@ -76,3 +76,4 @@
 - **Trigger-Enforced Immutability**: Normal users cannot alter their role, verification status, or guru approval status — attempting to do so triggers a PostgreSQL exception.
 - **Client-Protected Notifications**: Clients cannot insert fake notifications (`WITH CHECK (false)`); notifications are emitted exclusively by PostgreSQL triggers on `likes`, `comments`, `connections`, and `profiles`.
 - **Media Quotas**: Storage policies enforce 10 MB audio, 50 MB video, and strict folder ownership matching `auth.uid()`.
+

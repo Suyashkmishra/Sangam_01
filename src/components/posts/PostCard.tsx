@@ -140,3 +140,4 @@ export function PostCard({ post, currentUserId }: PostCardProps) {
     </article>
   );
 }
+
