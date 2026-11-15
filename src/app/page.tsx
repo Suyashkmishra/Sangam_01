@@ -13,7 +13,7 @@ export default function Home() {
         {/* Pill Badge */}
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-copper-50 border border-copper-200 text-copper-800 text-xs tracking-widest font-semibold uppercase mb-8 shadow-subtle">
           <Sparkles className="w-3.5 h-3.5 text-copper-600" />
-          <span>CONFLUENCE OF POETIC AND MUSICAL SOULS</span>
+          <span>THE CONFLUENCE OF TWO GENERATIONS</span>
           <Sparkles className="w-3.5 h-3.5 text-copper-600" />
         </div>
 
@@ -24,7 +24,7 @@ export default function Home() {
 
         {/* Subtext */}
         <p className="text-base sm:text-lg md:text-xl text-espresso/80 max-w-2xl font-light mb-10 leading-relaxed">
-          Sacred Ink meets Digital Soul. A sanctum connecting unrecognised poets and acoustic artists with revered masters across Hindi, Kannada, and English.
+          A sanctum connecting unrecognised poets and acoustic artists with revered masters across Hindi, Kannada, and English.
         </p>
 
         {/* CTAs */}
@@ -48,7 +48,7 @@ export default function Home() {
         {/* Thin curved decorative lines */}
         <div className="mt-16 text-copper/40 flex items-center justify-center gap-4">
           <div className="h-[1px] w-20 bg-copper/30"></div>
-          <span className="text-xs font-serif italic text-antiqueGold">संगम &bull; Sacred Ink meets Digital Soul</span>
+          <span className="text-xs font-serif italic text-antiqueGold">संगम &bull; Guru-Shishya Parampara</span>
           <div className="h-[1px] w-20 bg-copper/30"></div>
         </div>
 
