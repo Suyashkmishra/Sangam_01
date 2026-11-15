@@ -1,0 +1,63 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Noto+Sans+Devanagari:wght@400;500;600;700&family=Noto+Sans+Kannada:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-cream: #F6EDE0;
+  --text-espresso: #2A1A12;
+  --accent-copper: #B8622E;
+  --gold-antique: #A8751F;
+}
+
+body {
+  background-color: #F6EDE0;
+  color: #2A1A12;
+  font-family: 'Outfit', system-ui, -apple-system, sans-serif;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom scrollbar matching Indian warm theme */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #FAF4EC;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #EAB996;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #B8622E;
+}
+
+/* Multilingual typography */
+.font-devanagari {
+  font-family: 'Noto Sans Devanagari', 'Outfit', sans-serif;
+}
+
+.font-kannada {
+  font-family: 'Noto Sans Kannada', 'Outfit', sans-serif;
+}
+
+.font-serif {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+}
+
+.font-sans {
+  font-family: 'Outfit', system-ui, sans-serif;
+}
+
+/* Antique gold italic accent */
+.hero-accent {
+  font-style: italic;
+  color: #A8751F;
+}
