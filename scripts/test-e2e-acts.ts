@@ -139,7 +139,7 @@ async function runE2EActs() {
     const { data: contactRow, error: contErr } = await client
       .from("profile_contacts")
       .select("*")
-      .eq("user_id", "s0000000-0000-0000-0000-000000000001")
+      .eq("user_id", "c0000000-0000-0000-0000-000000000001")
       .single();
 
     if (contErr || !contactRow) {
@@ -152,7 +152,7 @@ async function runE2EActs() {
     const { data: blockedRow } = await client
       .from("profile_contacts")
       .select("*")
-      .eq("user_id", "s0000000-0000-0000-0000-000000000002")
+      .eq("user_id", "c0000000-0000-0000-0000-000000000002")
       .maybeSingle();
 
     if (blockedRow) {
@@ -203,3 +203,4 @@ async function runE2EActs() {
 }
 
 runE2EActs().catch(console.error);
+
