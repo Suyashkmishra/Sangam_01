@@ -241,15 +241,18 @@ CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public
 AS $$
 DECLARE
     raw_role TEXT;
-    assigned_role user_role := 'shishya';
-    initial_guru_status guru_verification_status := 'none';
+    assigned_role public.user_role := 'shishya';
+    initial_guru_status public.guru_verification_status := 'none';
     full_name_val TEXT;
+    city_val TEXT;
 BEGIN
     raw_role := LOWER(COALESCE(NEW.raw_user_meta_data->>'role', 'shishya'));
     full_name_val := COALESCE(NEW.raw_user_meta_data->>'full_name', split_part(NEW.email, '@', 1));
+    city_val := COALESCE(NEW.raw_user_meta_data->>'city', '');
 
     IF raw_role = 'guru' THEN
         assigned_role := 'guru';
@@ -275,13 +278,15 @@ BEGIN
         assigned_role,
         full_name_val,
         COALESCE(NEW.raw_user_meta_data->>'bio', ''),
-        COALESCE(NEW.raw_user_meta_data->>'city', ''),
+        city_val,
         ARRAY['Hindi']::TEXT[],
         NEW.raw_user_meta_data->>'avatar_url',
         initial_guru_status,
         false
     )
-    ON CONFLICT (id) DO NOTHING;
+    ON CONFLICT (id) DO UPDATE SET
+        full_name = EXCLUDED.full_name,
+        city = EXCLUDED.city;
 
     -- Initialize profile contacts row
     INSERT INTO public.profile_contacts (
@@ -293,6 +298,9 @@ BEGIN
     )
     ON CONFLICT (user_id) DO NOTHING;
 
+    RETURN NEW;
+EXCEPTION WHEN OTHERS THEN
+    RAISE WARNING 'handle_new_user error: %', SQLERRM;
     RETURN NEW;
 END;
 $$;
