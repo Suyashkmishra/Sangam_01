@@ -314,8 +314,15 @@ export default function SignupPage() {
     <div className="min-h-screen bg-cream flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
         <Link href="/" className="inline-block mb-3">
-          <div className="relative w-48 h-12 mx-auto">
-            <Image src="/logo.svg" alt="Sangam Logo" fill className="object-contain" priority />
+          <div className="flex justify-center">
+            <Image 
+              src="/logo.png" 
+              alt="Sangam logo" 
+              width={751} 
+              height={572} 
+              className="h-12 w-auto object-contain" 
+              priority 
+            />
           </div>
         </Link>
         <h2 className="font-serif text-3xl font-bold tracking-tight text-espresso">

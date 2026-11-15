@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Navbar } from "@/components/layout/Navbar";
 import { Feather, GraduationCap, Sparkles, BookOpen, Music, Users, ArrowRight } from "lucide-react";
 
@@ -95,8 +96,16 @@ export default function Home() {
       {/* Footer */}
       <footer className="border-t border-parchment-border py-8 text-center text-xs text-espresso/60 bg-cream-100">
         <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <span className="font-serif font-bold text-sm text-espresso">संगम SANGAM</span>
+          <div className="flex items-center gap-3">
+            <Link href="/" className="flex items-center">
+              <Image 
+                src="/logo.png" 
+                alt="Sangam logo" 
+                width={751}
+                height={572}
+                className="h-10 w-auto object-contain" 
+              />
+            </Link>
             <span>&bull;</span>
             <span>Sacred Ink meets Digital Soul</span>
           </div>

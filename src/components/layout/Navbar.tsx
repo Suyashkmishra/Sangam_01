@@ -116,13 +116,14 @@ export function Navbar() {
     <nav className="border-b border-parchment-border bg-cream-50/90 backdrop-blur-md sticky top-0 z-50 px-4 md:px-8 py-3.5">
       <div className="max-w-6xl mx-auto flex items-center justify-between">
         {/* Brand Logo */}
-        <Link href="/" className="flex items-center gap-2 group">
-          <div className="relative w-44 h-11 transition-transform group-hover:scale-[1.02]">
+        <Link href="/" className="flex items-center group">
+          <div className="flex items-center transition-transform group-hover:scale-[1.02]">
             <Image 
-              src="/logo.svg" 
-              alt="Sangam Logo" 
-              fill 
-              className="object-contain" 
+              src="/logo.png" 
+              alt="Sangam logo" 
+              width={751}
+              height={572}
+              className="h-10 w-auto object-contain" 
               priority 
             />
           </div>

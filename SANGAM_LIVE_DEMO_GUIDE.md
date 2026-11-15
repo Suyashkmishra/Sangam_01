@@ -25,7 +25,7 @@
 2. Point out the authentic Indian warm aesthetic:
    - Cream background (`#F6EDE0`), deep Espresso text (`#2A1A12`), Copper accents (`#B8622E`), and Antique Gold highlights (`#A8751F`).
    - Cormorant Garamond serif headings, Outfit sans body, and native Devanagari & Kannada script support.
-   - Flowing confluence logo emblem in `public/logo.svg`.
+   - Final authentic Sangam logo in `public/logo.png`.
 3. Click **Pricing**:
    - Highlight the cultural stewardship fees: ₹60 one-time for Shishya, ₹200/month for Guru.
    - Point out the clear "College Live Demo — Simulated Transactions" disclosure.
