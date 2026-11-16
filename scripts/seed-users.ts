@@ -51,7 +51,7 @@ const DEMO_USERS: DemoUser[] = [
     email: "admin.demo@sangam.test",
     password: "Demo@1234",
     role: "admin",
-    full_name: "Sangam Peethadhish (Admin)",
+    full_name: "Sangam Admin",
   },
   // 5 Approved Verified Gurus
   {

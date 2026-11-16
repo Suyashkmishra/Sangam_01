@@ -89,7 +89,7 @@ Integrated via Google Fonts with zero-latency fallback:
 
 ### 4.1 Demo Accounts Matrix
 All demo accounts are configured with password **`Demo@1234`**:
-- **Admin**: `admin.demo@sangam.test` (Sangam Peethadhish, Admin Curator)
+- **Admin**: `admin.demo@sangam.test` (Sangam Admin, Verification & Management)
 - **Verified Guru**: `guru.demo@sangam.test` (Pandit Devavrata Shastri, Classical Dhrupad & Hindi Poetry)
 - **Shishya**: `shishya.demo@sangam.test` (Aarav Neelkanth, Emerging Hindi poet & acoustic guitarist)
 - **Pending Guru**: `pending.guru@sangam.test` (Tarun Sengupta, Awaiting admin verification)

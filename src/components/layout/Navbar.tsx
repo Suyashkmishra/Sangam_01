@@ -18,6 +18,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { Profile } from "@/lib/types/database.types";
 import { RoleBadge } from "@/components/common/Badge";
+import { Avatar } from "@/components/ui/Avatar";
 
 export function Navbar() {
   const router = useRouter();
@@ -30,6 +31,15 @@ export function Navbar() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 15);
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   useEffect(() => {
     async function loadUser() {
@@ -113,8 +123,12 @@ export function Navbar() {
   ];
 
   return (
-    <nav className="border-b border-parchment-border bg-cream-50/90 backdrop-blur-md sticky top-0 z-50 px-4 md:px-8 py-3.5">
-      <div className="max-w-6xl mx-auto flex items-center justify-between">
+    <nav
+      className={`border-b border-parchment-border bg-cream-50/95 backdrop-blur-md sticky top-0 z-50 px-4 md:px-8 transition-all duration-300 flex items-center ${
+        isScrolled ? "h-16 shadow-subtle" : "h-16 md:h-20"
+      }`}
+    >
+      <div className="max-w-6xl mx-auto w-full flex items-center justify-between">
         {/* Brand Logo */}
         <Link href="/" className="flex items-center group">
           <div className="flex items-center transition-transform group-hover:scale-[1.02]">
@@ -123,7 +137,9 @@ export function Navbar() {
               alt="Sangam logo" 
               width={751}
               height={572}
-              className="h-10 w-auto object-contain" 
+              className={`w-auto object-contain transition-all duration-300 ${
+                isScrolled ? "h-[44px]" : "h-[44px] md:h-[56px]"
+              }`} 
               priority 
             />
           </div>
@@ -176,22 +192,18 @@ export function Navbar() {
               </Link>
 
               {/* Profile Menu Trigger */}
-              <div className="relative">
+              <div className="relative flex items-center">
                 <button
                   onClick={() => setDropdownOpen(!dropdownOpen)}
-                  className="flex items-center gap-2 p-1 rounded-full border border-parchment-border hover:border-copper/40 transition-all focus:outline-none"
+                  className="flex items-center p-0.5 rounded-full border border-parchment-border hover:border-copper/40 transition-all focus:outline-none"
+                  aria-label="User profile menu"
                 >
-                  {profile?.avatar_url ? (
-                    <img
-                      src={profile.avatar_url}
-                      alt={profile.full_name}
-                      className="w-8 h-8 rounded-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-8 h-8 rounded-full bg-copper-100 text-copper-800 flex items-center justify-center text-xs font-bold">
-                      {profile?.full_name?.charAt(0).toUpperCase() || "S"}
-                    </div>
-                  )}
+                  <Avatar
+                    name={profile?.full_name}
+                    avatarUrl={profile?.avatar_url}
+                    role={profile?.role}
+                    size="sm"
+                  />
                 </button>
 
                 {/* Dropdown Menu */}
@@ -313,7 +325,7 @@ export function Navbar() {
 
       {/* Mobile Drawer Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-parchment-border mt-3 pt-3 pb-4 space-y-2">
+        <div className="md:hidden absolute top-full left-0 right-0 bg-cream-50/98 backdrop-blur-md border-b border-parchment-border px-4 py-4 shadow-floating space-y-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
           {user && profile && (
             <div className="px-3 py-2 bg-cream-100 rounded-lg mb-2">
               <p className="text-xs font-bold text-espresso">{profile.full_name}</p>

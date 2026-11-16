@@ -147,7 +147,7 @@ export default function AdminVerificationPage() {
             Restricted Admin Sanctum
           </h2>
           <p className="text-xs text-espresso/60 max-w-sm mb-4">
-            You must be signed in with the Peethadhish (Admin) account to access mentor verification.
+            You must be signed in with the Admin account to access mentor verification.
           </p>
           <Link
             href="/login"

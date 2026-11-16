@@ -17,7 +17,7 @@ export function RoleBadge({ role, isVerified, guruStatus, size = "md" }: RoleBad
     return (
       <span className={`inline-flex items-center gap-1.5 rounded-full bg-espresso text-cream-100 ${padding}`}>
         <Sparkles className={isSmall ? "w-3 h-3" : "w-3.5 h-3.5"} />
-        <span>Admin / Peethadhish</span>
+        <span>Admin</span>
       </span>
     );
   }

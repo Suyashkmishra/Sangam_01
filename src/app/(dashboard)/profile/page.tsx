@@ -24,6 +24,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Profile, ProfileContact, Post, Connection, Payment } from "@/lib/types/database.types";
 import { Navbar } from "@/components/layout/Navbar";
 import { RoleBadge } from "@/components/common/Badge";
+import { Avatar } from "@/components/ui/Avatar";
 import { PostCard } from "@/components/posts/PostCard";
 
 export default function MyProfilePage() {
@@ -242,17 +243,12 @@ export default function MyProfilePage() {
         <div className="bg-white rounded-3xl border border-parchment-border shadow-card p-6 sm:p-8">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
             <div className="flex items-center gap-5">
-              {profile?.avatar_url ? (
-                <img
-                  src={profile.avatar_url}
-                  alt={profile.full_name}
-                  className="w-20 h-20 rounded-2xl object-cover border border-parchment-border shadow-subtle flex-shrink-0"
-                />
-              ) : (
-                <div className="w-20 h-20 rounded-2xl bg-copper-100 text-copper-800 flex items-center justify-center font-serif text-3xl font-bold border border-copper-200 shadow-subtle flex-shrink-0">
-                  {profile?.full_name?.charAt(0) || "S"}
-                </div>
-              )}
+              <Avatar
+                name={profile?.full_name}
+                avatarUrl={profile?.avatar_url}
+                role={profile?.role}
+                size="2xl"
+              />
 
               <div>
                 <div className="flex items-center gap-2.5 mb-1.5">
@@ -286,12 +282,14 @@ export default function MyProfilePage() {
               </div>
             </div>
 
-            <div className="text-right sm:text-left">
-              <span className="text-[11px] text-espresso/50 block">Artistic Lineage</span>
-              <span className="text-xs font-semibold text-copper-800 capitalize">
-                {profile?.role === "guru" ? "Master Mentor" : "Emerging Voice"}
-              </span>
-            </div>
+            {profile?.role !== "admin" && (
+              <div className="text-right sm:text-left">
+                <span className="text-[11px] text-espresso/50 block">Artistic Lineage</span>
+                <span className="text-xs font-semibold text-copper-800 capitalize">
+                  {profile?.role === "guru" ? "Master Mentor" : "Emerging Voice"}
+                </span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -405,17 +403,12 @@ export default function MyProfilePage() {
                   >
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div className="flex items-center gap-3">
-                        {otherParty?.avatar_url ? (
-                          <img
-                            src={otherParty.avatar_url}
-                            alt={otherParty.full_name}
-                            className="w-10 h-10 rounded-full object-cover border border-parchment-border"
-                          />
-                        ) : (
-                          <div className="w-10 h-10 rounded-full bg-copper-100 text-copper-800 flex items-center justify-center font-serif font-bold text-sm">
-                            {otherParty?.full_name?.charAt(0) || "A"}
-                          </div>
-                        )}
+                        <Avatar
+                          name={otherParty?.full_name}
+                          avatarUrl={otherParty?.avatar_url}
+                          role={otherParty?.role}
+                          size="md"
+                        />
                         <div>
                           <div className="flex items-center gap-2">
                             <h4 className="text-sm font-bold text-espresso">

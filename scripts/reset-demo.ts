@@ -100,6 +100,40 @@ async function resetDemo() {
     .eq("id", "b0000000-0000-0000-0000-000000000001");
   console.log("   ✅ Verified Guru reset to 'approved' (is_verified = true).");
 
+  // 3b. Reset Admin name, avatar_url and clear stock photos
+  await supabaseAdmin
+    .from("profiles")
+    .update({
+      full_name: "Sangam Admin",
+      avatar_url: null,
+      is_suspended: false,
+    })
+    .eq("role", "admin");
+
+  await supabaseAdmin
+    .from("profiles")
+    .update({ avatar_url: null, is_suspended: false })
+    .in("id", [
+      "a0000000-0000-0000-0000-000000000001",
+      "b0000000-0000-0000-0000-000000000001",
+      "b0000000-0000-0000-0000-000000000002",
+      "b0000000-0000-0000-0000-000000000003",
+      "b0000000-0000-0000-0000-000000000004",
+      "b0000000-0000-0000-0000-000000000005",
+      "b0000000-0000-0000-0000-000000000006",
+      "c0000000-0000-0000-0000-000000000001",
+      "c0000000-0000-0000-0000-000000000002",
+      "c0000000-0000-0000-0000-000000000003",
+      "c0000000-0000-0000-0000-000000000004",
+      "c0000000-0000-0000-0000-000000000005",
+      "c0000000-0000-0000-0000-000000000006",
+      "c0000000-0000-0000-0000-000000000007",
+      "c0000000-0000-0000-0000-000000000008",
+      "c0000000-0000-0000-0000-000000000009",
+      "c0000000-0000-0000-0000-000000000010",
+    ]);
+  console.log("   ✅ Demo user avatars reset to Initials and suspension cleared.");
+
   // 4. Reset Notifications to original state
   console.log("\n3. Resetting Notifications...");
   await supabaseAdmin.from("notifications").delete().neq("id", "00000000-0000-0000-0000-000000000000");

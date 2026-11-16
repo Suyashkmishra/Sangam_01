@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, Suspense } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -27,6 +27,12 @@ function LoginContent() {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
+  useEffect(() => {
+    if (searchParams.get("suspended")) {
+      setErrorMsg("Your account is suspended. Please contact the Sangam administrator.");
+    }
+  }, [searchParams]);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -40,6 +46,22 @@ function LoginContent() {
 
       if (error) {
         throw error;
+      }
+
+      if (data?.user) {
+        // Enforce account suspension check
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("is_suspended")
+          .eq("id", data.user.id)
+          .single();
+
+        if (profile?.is_suspended) {
+          await supabase.auth.signOut();
+          setErrorMsg("Your account is suspended. Please contact the Sangam administrator.");
+          setLoading(false);
+          return;
+        }
       }
 
       router.push("/dashboard");
@@ -84,7 +106,7 @@ function LoginContent() {
               onClick={() => fillDemo("admin.demo@sangam.test", "Demo@1234")}
               className="p-2 rounded-lg bg-white/80 hover:bg-white border border-parchment-border hover:border-copper text-left transition-all"
             >
-              <div className="font-bold text-espresso">Admin (Peethadhish)</div>
+              <div className="font-bold text-espresso">Admin</div>
               <div className="text-[10px] text-espresso/60 truncate">admin.demo@sangam.test</div>
             </button>
 

@@ -57,7 +57,7 @@ Open [http://localhost:3000](http://localhost:3000) to view Sangam.
 
 | Role | Email | Password | Status |
 | :--- | :--- | :--- | :--- |
-| **Admin** | `admin.demo@sangam.test` | `Demo@1234` | Peethadhish (Verification Curator) |
+| **Admin** | `admin.demo@sangam.test` | `Demo@1234` | Admin (Verification & Management) |
 | **Guru (Verified)** | `guru.demo@sangam.test` | `Demo@1234` | Pandit Devavrata Shastri (Classical Dhrupad & Poetry) |
 | **Shishya (Talent)** | `shishya.demo@sangam.test` | `Demo@1234` | Aarav Neelkanth (Young Hindi poet & guitarist) |
 | **Guru (Pending)** | `pending.guru@sangam.test` | `Demo@1234` | Tarun Sengupta (Awaiting admin approval) |
