@@ -25,6 +25,8 @@ export interface Profile {
   avatar_url: string | null;
   guru_status: GuruStatus;
   is_verified: boolean;
+  is_suspended?: boolean;
+  suspended_at?: string | null;
   created_at: string;
 }
 

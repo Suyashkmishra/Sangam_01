@@ -19,6 +19,7 @@ import { Post, Profile, ContentLanguage, PostCategory } from "@/lib/types/databa
 import { Navbar } from "@/components/layout/Navbar";
 import { PostCard } from "@/components/posts/PostCard";
 import { RoleBadge } from "@/components/common/Badge";
+import { Avatar } from "@/components/ui/Avatar";
 
 export default function ExplorePage() {
   const supabase = createClient();
@@ -60,33 +61,46 @@ export default function ExplorePage() {
             }
           }
 
-          const formattedPosts: Post[] = postsData.map((p: any) => ({
-            ...p,
-            likes_count: p.likes?.[0]?.count || 0,
-            comments_count: p.comments?.[0]?.count || 0,
-            is_liked_by_user: userLikes.has(p.id),
-          }));
+          const formattedPosts: Post[] = postsData
+            .filter((p: any) => {
+              // Hide posts from suspended authors
+              if (p.author?.is_suspended) return false;
+              // If author is guru, only show if approved
+              if (p.author?.role === "guru" && p.author?.guru_status !== "approved") return false;
+              return true;
+            })
+            .map((p: any) => ({
+              ...p,
+              likes_count: p.likes?.[0]?.count || 0,
+              comments_count: p.comments?.[0]?.count || 0,
+              is_liked_by_user: userLikes.has(p.id),
+            }));
 
           setPosts(formattedPosts);
         }
 
-        // Fetch Gurus
+        // Fetch Gurus (Only approved and non-suspended)
         const { data: gurusData } = await supabase
           .from("profiles")
           .select("*")
           .eq("role", "guru")
+          .eq("guru_status", "approved")
           .order("is_verified", { ascending: false });
 
-        if (gurusData) setGurus(gurusData as Profile[]);
+        if (gurusData) {
+          setGurus(gurusData.filter((g: any) => !g.is_suspended) as Profile[]);
+        }
 
-        // Fetch Shishyas
+        // Fetch Shishyas (Only non-suspended)
         const { data: shishyasData } = await supabase
           .from("profiles")
           .select("*")
           .eq("role", "shishya")
           .order("created_at", { ascending: false });
 
-        if (shishyasData) setShishyas(shishyasData as Profile[]);
+        if (shishyasData) {
+          setShishyas(shishyasData.filter((s: any) => !s.is_suspended) as Profile[]);
+        }
       } catch (err) {
         console.error("Explore fetch error:", err);
       } finally {
@@ -296,17 +310,12 @@ export default function ExplorePage() {
                     >
                       <div>
                         <div className="flex items-start gap-4 mb-4">
-                          {guru.avatar_url ? (
-                            <img
-                              src={guru.avatar_url}
-                              alt={guru.full_name}
-                              className="w-14 h-14 rounded-2xl object-cover border border-parchment-border flex-shrink-0"
-                            />
-                          ) : (
-                            <div className="w-14 h-14 rounded-2xl bg-amber-100 text-antiqueGold-dark flex items-center justify-center font-serif text-xl font-bold flex-shrink-0">
-                              {guru.full_name.charAt(0)}
-                            </div>
-                          )}
+                          <Avatar
+                            name={guru.full_name}
+                            avatarUrl={guru.avatar_url}
+                            role="guru"
+                            size="lg"
+                          />
                           <div>
                             <h3 className="font-serif text-lg font-bold text-espresso leading-snug">
                               {guru.full_name}
@@ -365,17 +374,12 @@ export default function ExplorePage() {
                     >
                       <div>
                         <div className="flex items-start gap-4 mb-4">
-                          {shishya.avatar_url ? (
-                            <img
-                              src={shishya.avatar_url}
-                              alt={shishya.full_name}
-                              className="w-14 h-14 rounded-2xl object-cover border border-parchment-border flex-shrink-0"
-                            />
-                          ) : (
-                            <div className="w-14 h-14 rounded-2xl bg-copper-100 text-copper-800 flex items-center justify-center font-serif text-xl font-bold flex-shrink-0">
-                              {shishya.full_name.charAt(0)}
-                            </div>
-                          )}
+                          <Avatar
+                            name={shishya.full_name}
+                            avatarUrl={shishya.avatar_url}
+                            role="shishya"
+                            size="lg"
+                          />
                           <div>
                             <h3 className="font-serif text-lg font-bold text-espresso leading-snug">
                               {shishya.full_name}

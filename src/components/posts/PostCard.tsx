@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Feather, Music, Video, MessageSquare, ExternalLink } from "lucide-react";
 import { Post } from "@/lib/types/database.types";
 import { RoleBadge } from "@/components/common/Badge";
+import { Avatar } from "@/components/ui/Avatar";
 import { LikeButton } from "@/components/posts/LikeButton";
 
 interface PostCardProps {
@@ -30,17 +31,12 @@ export function PostCard({ post, currentUserId }: PostCardProps) {
             href={`/profile/${post.author?.id || post.author_id}`}
             className="flex items-center gap-2.5 group/author"
           >
-            {post.author?.avatar_url ? (
-              <img
-                src={post.author.avatar_url}
-                alt={post.author.full_name}
-                className="w-9 h-9 rounded-full object-cover border border-parchment-border"
-              />
-            ) : (
-              <div className="w-9 h-9 rounded-full bg-copper-100 text-copper-800 flex items-center justify-center text-xs font-bold font-serif">
-                {post.author?.full_name?.charAt(0).toUpperCase() || "A"}
-              </div>
-            )}
+            <Avatar
+              name={post.author?.full_name}
+              avatarUrl={post.author?.avatar_url}
+              role={post.author?.role}
+              size="sm"
+            />
             <div>
               <p className="text-xs font-bold text-espresso group-hover/author:text-copper transition-colors truncate max-w-[140px] sm:max-w-[200px]">
                 {post.author?.full_name || "Anonymous Artist"}

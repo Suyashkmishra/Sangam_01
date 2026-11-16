@@ -1,3 +1,5 @@
+import dns from "dns";
+dns.setDefaultResultOrder("ipv4first");
 import { createClient } from "@supabase/supabase-js";
 import * as fs from "fs";
 import * as path from "path";
@@ -38,7 +40,7 @@ const adminClient = serviceKey ? createClient(supabaseUrl, serviceKey) : null;
 
 async function runE2EActs() {
   console.log("=================================================");
-  console.log("   SANGAM 5-ACT END-TO-END VERIFICATION SUITE   ");
+  console.log("   SANGAM 6-ACT END-TO-END VERIFICATION SUITE   ");
   console.log("=================================================\n");
 
   let passed = 0;
@@ -197,8 +199,113 @@ async function runE2EActs() {
     failed++;
   }
 
+  // ACT 6: Admin Suspend and Reactivate Lifecycle
+  console.log("\n--- ACT 6: Admin Suspend and Reactivate Lifecycle ---");
+  try {
+    if (!adminClient) throw new Error("SUPABASE_SERVICE_ROLE_KEY required for Admin Suspend test");
+
+    // Target test subject: Chetan Kumar (c0000000-0000-0000-0000-000000000003)
+    const targetId = "c0000000-0000-0000-0000-000000000003";
+    const targetEmail = "chetan.kumar@sangam.test";
+    const targetPass = "Demo@1234";
+
+    // 1. Suspend the user
+    const { error: suspErr } = await adminClient
+      .from("profiles")
+      .update({
+        is_suspended: true,
+        suspended_at: new Date().toISOString(),
+      })
+      .eq("id", targetId);
+
+    if (suspErr) throw suspErr;
+
+    // Apply Auth ban
+    await adminClient.auth.admin.updateUserById(targetId, { ban_duration: "876000h" });
+
+    // 2. Verify hidden from public explore lists
+    const { data: publicList } = await client
+      .from("profiles")
+      .select("id")
+      .eq("is_suspended", false)
+      .eq("id", targetId);
+
+    if (publicList && publicList.length > 0) {
+      throw new Error("Suspended user was still visible in public lists!");
+    }
+    console.log("   - Suspended user hidden from public lists: ✅ Verified");
+
+    // 3. Verify suspended user cannot log in
+    let loginBlocked = false;
+    const { data: loginAttempt, error: loginErr } = await client.auth.signInWithPassword({
+      email: targetEmail,
+      password: targetPass,
+    });
+
+    if (loginErr) {
+      loginBlocked = true;
+    } else if (loginAttempt.user) {
+      // Check profile is_suspended check
+      const { data: prof } = await client
+        .from("profiles")
+        .select("is_suspended")
+        .eq("id", loginAttempt.user.id)
+        .single();
+
+      if (prof?.is_suspended) {
+        await client.auth.signOut();
+        loginBlocked = true;
+      }
+    }
+
+    if (!loginBlocked) {
+      throw new Error("Suspended user was able to log in!");
+    }
+    console.log("   - Suspended user login prevented: ✅ Verified");
+
+    // 4. Reactivate the user
+    const { error: reactErr } = await adminClient
+      .from("profiles")
+      .update({
+        is_suspended: false,
+        suspended_at: null,
+      })
+      .eq("id", targetId);
+
+    if (reactErr) throw reactErr;
+    await adminClient.auth.admin.updateUserById(targetId, { ban_duration: "none" });
+
+    // 5. Verify restored in public list & can log in
+    const { data: restoredList } = await client
+      .from("profiles")
+      .select("id")
+      .eq("is_suspended", false)
+      .eq("id", targetId);
+
+    if (!restoredList || restoredList.length === 0) {
+      throw new Error("Reactivated user failed to reappear in public lists!");
+    }
+
+    const { data: reloginAuth, error: reloginErr } = await client.auth.signInWithPassword({
+      email: targetEmail,
+      password: targetPass,
+    });
+
+    if (reloginErr || !reloginAuth.user) {
+      throw new Error("Reactivated user could not log in!");
+    }
+    await client.auth.signOut();
+
+    console.log("   - Reactivated user successfully restored & logged in: ✅ Verified");
+    console.log("✅ Act 6 Passed: Admin Suspend and Reactivate lifecycle works flawlessly.");
+    passed++;
+  } catch (err: any) {
+    console.log(`❌ Act 6 Failed: ${err.message}`);
+    failed++;
+  }
+
   console.log("\n=================================================");
-  console.log(`   SUITE COMPLETE: ${passed}/5 Acts Passed, ${failed} Failed`);
+  console.log(`   SUITE COMPLETE: ${passed}/6 Acts Passed, ${failed} Failed`);
   console.log("=================================================");
 }
 

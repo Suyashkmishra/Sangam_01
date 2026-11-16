@@ -62,7 +62,24 @@ export async function updateSession(request: NextRequest) {
   );
 
   // Refresh auth token
-  await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  // Enforce account suspension check
+  if (user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("is_suspended")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (profile?.is_suspended) {
+      await supabase.auth.signOut();
+      const redirectUrl = request.nextUrl.clone();
+      redirectUrl.pathname = "/login";
+      redirectUrl.searchParams.set("suspended", "1");
+      return NextResponse.redirect(redirectUrl);
+    }
+  }
 
   return response;
 }
