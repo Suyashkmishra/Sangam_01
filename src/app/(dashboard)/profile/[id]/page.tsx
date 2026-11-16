@@ -82,35 +82,21 @@ export default function PublicProfilePage() {
           if (prof) setCurrentUserProfile(prof as Profile);
         }
 
-        // Fetch target artist profile
-        const { data: artistData, error } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", profileId)
-          .single();
+        // Fetch target artist profile and works via secure server endpoint
+        const { data: { session } } = await supabase.auth.getSession();
+        const res = await fetch(`/api/profile/${profileId}`, {
+          headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
+        });
+        const data = await res.json();
 
-        if (error || !artistData) {
-          console.error("Artist profile error:", error);
+        if (!res.ok || !data.profile) {
+          console.error("Artist profile error:", data.error);
           setLoading(false);
           return;
         }
 
-        setProfile(artistData as Profile);
-
-        // Fetch their posts
-        const { data: postsData } = await supabase
-          .from("posts")
-          .select("*, author:profiles!posts_author_id_fkey(*), likes(count), comments(count)")
-          .eq("author_id", profileId)
-          .order("created_at", { ascending: false });
-
-        if (postsData) {
-          setPosts(postsData.map((p: any) => ({
-            ...p,
-            likes_count: p.likes?.[0]?.count || 0,
-            comments_count: p.comments?.[0]?.count || 0,
-          })));
-        }
+        setProfile(data.profile as Profile);
+        setPosts(data.posts || []);
       } catch (err) {
         console.error("Public profile load error:", err);
       } finally {

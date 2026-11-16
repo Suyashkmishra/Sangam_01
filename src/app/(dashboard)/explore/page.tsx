@@ -33,51 +33,51 @@ export default function ExplorePage() {
   const [gurus, setGurus] = useState<Profile[]>([]);
   const [shishyas, setShishyas] = useState<Profile[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentUserProfile, setCurrentUserProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadData() {
       setLoading(true);
       try {
+        let userRole: string | null = null;
         const { data: { user } } = await supabase.auth.getUser();
-        if (user) setCurrentUserId(user.id);
-
-        // Fetch posts with author info
-        const { data: postsData } = await supabase
-          .from("posts")
-          .select("*, author:profiles!posts_author_id_fkey(*), likes(count), comments(count)")
-          .order("created_at", { ascending: false });
-
-        if (postsData) {
-          // If logged in, also check which posts user has liked
-          let userLikes = new Set<string>();
-          if (user) {
-            const { data: likesData } = await supabase
-              .from("likes")
-              .select("post_id")
-              .eq("user_id", user.id);
-            if (likesData) {
-              userLikes = new Set(likesData.map((l) => l.post_id));
-            }
+        if (user) {
+          setCurrentUserId(user.id);
+          const { data: prof } = await supabase
+            .from("profiles")
+            .select("*")
+            .eq("id", user.id)
+            .single();
+          if (prof) {
+            setCurrentUserProfile(prof as Profile);
+            userRole = prof.role;
           }
-
-          const formattedPosts: Post[] = postsData
-            .filter((p: any) => {
-              // Hide posts from suspended authors
-              if (p.author?.is_suspended) return false;
-              // If author is guru, only show if approved
-              if (p.author?.role === "guru" && p.author?.guru_status !== "approved") return false;
-              return true;
-            })
-            .map((p: any) => ({
-              ...p,
-              likes_count: p.likes?.[0]?.count || 0,
-              comments_count: p.comments?.[0]?.count || 0,
-              is_liked_by_user: userLikes.has(p.id),
-            }));
-
-          setPosts(formattedPosts);
         }
+
+        // Fetch posts via explore endpoint
+        const postsRes = await fetch("/api/explore/posts");
+        const postsJson = await postsRes.json();
+        const postsData = postsJson.posts || [];
+
+        // If logged in, check which posts user has liked
+        let userLikes = new Set<string>();
+        if (user) {
+          const { data: likesData } = await supabase
+            .from("likes")
+            .select("post_id")
+            .eq("user_id", user.id);
+          if (likesData) {
+            userLikes = new Set(likesData.map((l) => l.post_id));
+          }
+        }
+
+        const formattedPosts: Post[] = postsData.map((p: any) => ({
+          ...p,
+          is_liked_by_user: userLikes.has(p.id),
+        }));
+
+        setPosts(formattedPosts);
 
         // Fetch Gurus (Only approved and non-suspended)
         const { data: gurusData } = await supabase
@@ -91,15 +91,18 @@ export default function ExplorePage() {
           setGurus(gurusData.filter((g: any) => !g.is_suspended) as Profile[]);
         }
 
-        // Fetch Shishyas (Only non-suspended)
-        const { data: shishyasData } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("role", "shishya")
-          .order("created_at", { ascending: false });
-
-        if (shishyasData) {
-          setShishyas(shishyasData.filter((s: any) => !s.is_suspended) as Profile[]);
+        // Fetch Shishyas ONLY for Gurus and Admins (Shishyas cannot list other shishyas)
+        if (userRole === "guru" || userRole === "admin") {
+          const { data: { session } } = await supabase.auth.getSession();
+          const shishyasRes = await fetch("/api/shishyas", {
+            headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {},
+          });
+          const shishyasJson = await shishyasRes.json();
+          if (shishyasJson.shishyas) {
+            setShishyas(shishyasJson.shishyas);
+          }
+        } else {
+          setShishyas([]);
         }
       } catch (err) {
         console.error("Explore fetch error:", err);
@@ -206,17 +209,20 @@ export default function ExplorePage() {
               <GraduationCap className="w-3.5 h-3.5" />
               <span>Gurus ({gurus.length})</span>
             </button>
-            <button
-              onClick={() => setActiveTab("shishyas")}
-              className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
-                activeTab === "shishyas"
-                  ? "bg-copper text-white shadow-subtle"
-                  : "text-espresso/70 hover:text-espresso hover:bg-cream-100"
-              }`}
-            >
-              <Users className="w-3.5 h-3.5" />
-              <span>Shishyas ({shishyas.length})</span>
-            </button>
+            {/* Shishyas Tab: Visible ONLY for Gurus and Admins (Shishyas see only All Works & Gurus) */}
+            {(currentUserProfile?.role === "guru" || currentUserProfile?.role === "admin") && (
+              <button
+                onClick={() => setActiveTab("shishyas")}
+                className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                  activeTab === "shishyas"
+                    ? "bg-copper text-white shadow-subtle"
+                    : "text-espresso/70 hover:text-espresso hover:bg-cream-100"
+                }`}
+              >
+                <Users className="w-3.5 h-3.5" />
+                <span>Shishyas ({shishyas.length})</span>
+              </button>
+            )}
           </div>
 
           {/* Quick Filter Badges */}
@@ -358,8 +364,8 @@ export default function ExplorePage() {
               </div>
             )}
 
-            {/* TAB 3: SHISHYAS ROSTER */}
-            {activeTab === "shishyas" && (
+            {/* TAB 3: SHISHYAS ROSTER (Gurus and Admins ONLY) */}
+            {activeTab === "shishyas" && (currentUserProfile?.role === "guru" || currentUserProfile?.role === "admin") && (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredShishyas.length === 0 ? (
                   <div className="col-span-full bg-white p-12 rounded-2xl border border-parchment-border text-center space-y-2">

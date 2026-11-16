@@ -451,9 +451,20 @@ ALTER TABLE public.payments ENABLE ROW LEVEL SECURITY;
 
 -- 1. PROFILES POLICIES
 DROP POLICY IF EXISTS "Public profiles are viewable by everyone" ON public.profiles;
-CREATE POLICY "Public profiles are viewable by everyone" 
+DROP POLICY IF EXISTS "Profiles view policy" ON public.profiles;
+CREATE POLICY "Profiles view policy" 
     ON public.profiles FOR SELECT 
-    USING (true);
+    USING (
+        auth.uid() = id
+        OR (role IN ('guru', 'admin') AND is_suspended = false)
+        OR (
+            is_suspended = false
+            AND EXISTS (
+                SELECT 1 FROM public.profiles 
+                WHERE id = auth.uid() AND role IN ('guru', 'admin')
+            )
+        )
+    );
 
 DROP POLICY IF EXISTS "Users can insert their own profile" ON public.profiles;
 CREATE POLICY "Users can insert their own profile" 
