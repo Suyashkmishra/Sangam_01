@@ -103,7 +103,7 @@ export default function MyProfilePage() {
         // Fetch own posts
         const { data: postsData } = await supabase
           .from("posts")
-          .select("*, author:profiles(*), likes(count), comments(count)")
+          .select("*, author:profiles!posts_author_id_fkey(*), likes(count), comments(count)")
           .eq("author_id", user.id)
           .order("created_at", { ascending: false });
 
@@ -262,18 +262,20 @@ export default function MyProfilePage() {
                     size="md"
                   />
                 </div>
-                <p className="text-xs text-espresso/60 flex items-center gap-2">
-                  <span>{user?.email}</span>
-                  {profile?.city && (
-                    <>
-                      <span>&bull;</span>
-                      <span className="flex items-center gap-0.5">
-                        <MapPin className="w-3 h-3 text-copper-600" />
-                        {profile.city}
-                      </span>
-                    </>
-                  )}
-                </p>
+                {profile?.role !== "admin" && (
+                  <p className="text-xs text-espresso/60 flex items-center gap-2">
+                    <span>{user?.email}</span>
+                    {profile?.city && (
+                      <>
+                        <span>&bull;</span>
+                        <span className="flex items-center gap-0.5">
+                          <MapPin className="w-3 h-3 text-copper-600" />
+                          {profile.city}
+                        </span>
+                      </>
+                    )}
+                  </p>
+                )}
                 {profile?.bio && (
                   <p className="text-xs text-espresso/80 mt-2.5 max-w-xl leading-relaxed">
                     {profile.bio}
@@ -293,8 +295,11 @@ export default function MyProfilePage() {
           </div>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="flex items-center gap-2 border-b border-parchment-border pb-2 overflow-x-auto">
+        {/* Tab Navigation and Content (Guru and Shishya only) */}
+        {profile?.role !== "admin" && (
+          <>
+            {/* Tab Navigation */}
+            <div className="flex items-center gap-2 border-b border-parchment-border pb-2 overflow-x-auto">
           <button
             onClick={() => setActiveTab("works")}
             className={`px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
@@ -636,6 +641,8 @@ export default function MyProfilePage() {
               </div>
             )}
           </div>
+        )}
+          </>
         )}
       </main>
     </div>

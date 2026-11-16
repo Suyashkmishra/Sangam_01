@@ -120,6 +120,7 @@ export function Navbar() {
     { label: "Explore", href: "/explore", icon: Compass },
     { label: "Pricing", href: "/pricing", icon: Sparkles },
     ...(user ? [{ label: "Dashboard", href: "/dashboard", icon: null }] : []),
+    ...(profile?.role === "admin" ? [{ label: "Admin Panel", href: "/admin", icon: ShieldCheck }] : []),
   ];
 
   return (
@@ -168,14 +169,16 @@ export function Navbar() {
             <div className="w-8 h-8 rounded-full bg-parchment-border/40 animate-pulse" />
           ) : user ? (
             <div className="flex items-center gap-4">
-              {/* Create Post Button */}
-              <Link
-                href="/posts/create"
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium bg-copper-50 text-copper-800 border border-copper-300 rounded-lg hover:bg-copper-100 transition-all shadow-subtle"
-              >
-                <PlusCircle className="w-3.5 h-3.5 text-copper-600" />
-                <span>Create Post</span>
-              </Link>
+              {/* Create Post Button (Guru & Shishya only) */}
+              {profile?.role !== "admin" && (
+                <Link
+                  href="/posts/create"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium bg-copper-50 text-copper-800 border border-copper-300 rounded-lg hover:bg-copper-100 transition-all shadow-subtle"
+                >
+                  <PlusCircle className="w-3.5 h-3.5 text-copper-600" />
+                  <span>Create Post</span>
+                </Link>
+              )}
 
               {/* Notification Bell */}
               <Link
@@ -352,13 +355,15 @@ export function Navbar() {
 
           {user ? (
             <>
-              <Link
-                href="/posts/create"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block px-3 py-2 text-sm font-medium text-copper hover:bg-copper-50 rounded-lg"
-              >
-                + Create Post
-              </Link>
+              {profile?.role !== "admin" && (
+                <Link
+                  href="/posts/create"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-3 py-2 text-sm font-medium text-copper hover:bg-copper-50 rounded-lg"
+                >
+                  + Create Post
+                </Link>
+              )}
               <Link
                 href="/profile"
                 onClick={() => setMobileMenuOpen(false)}

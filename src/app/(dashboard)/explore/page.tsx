@@ -45,7 +45,7 @@ export default function ExplorePage() {
         // Fetch posts with author info
         const { data: postsData } = await supabase
           .from("posts")
-          .select("*, author:profiles(*), likes(count), comments(count)")
+          .select("*, author:profiles!posts_author_id_fkey(*), likes(count), comments(count)")
           .order("created_at", { ascending: false });
 
         if (postsData) {

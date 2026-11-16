@@ -503,7 +503,15 @@ CREATE POLICY "Posts are viewable by everyone"
 DROP POLICY IF EXISTS "Authenticated users can create posts" ON public.posts;
 CREATE POLICY "Authenticated users can create posts"
     ON public.posts FOR INSERT
-    WITH CHECK (auth.uid() = author_id);
+    WITH CHECK (
+        auth.uid() = author_id AND
+        EXISTS (
+            SELECT 1 FROM public.profiles 
+            WHERE id = auth.uid() 
+            AND role IN ('guru', 'shishya')
+            AND is_suspended = false
+        )
+    );
 
 DROP POLICY IF EXISTS "Authors can update their posts" ON public.posts;
 CREATE POLICY "Authors can update their posts"

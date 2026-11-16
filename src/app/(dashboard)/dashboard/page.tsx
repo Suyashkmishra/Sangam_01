@@ -23,6 +23,7 @@ import { Profile } from "@/lib/types/database.types";
 import { Navbar } from "@/components/layout/Navbar";
 import { PendingGuruBanner } from "@/components/layout/PendingGuruBanner";
 import { RoleBadge } from "@/components/common/Badge";
+import { Avatar } from "@/components/ui/Avatar";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -147,17 +148,12 @@ export default function DashboardPage() {
         {/* Welcome Header */}
         <div className="bg-white p-6 md:p-8 rounded-2xl border border-parchment-border shadow-subtle flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div className="flex items-center gap-4">
-            {profile?.avatar_url ? (
-              <img
-                src={profile.avatar_url}
-                alt={profile.full_name}
-                className="w-16 h-16 rounded-2xl object-cover border border-parchment-border shadow-subtle"
-              />
-            ) : (
-              <div className="w-16 h-16 rounded-2xl bg-copper-100 text-copper-800 flex items-center justify-center font-serif text-2xl font-bold border border-copper-200 shadow-subtle">
-                {profile?.full_name?.charAt(0).toUpperCase() || "S"}
-              </div>
-            )}
+            <Avatar
+              name={profile?.full_name}
+              avatarUrl={profile?.avatar_url}
+              role={profile?.role}
+              size="xl"
+            />
 
             <div>
               <div className="flex items-center gap-2.5 mb-1">
@@ -184,13 +180,15 @@ export default function DashboardPage() {
           </div>
 
           <div className="flex items-center gap-3 w-full md:w-auto">
-            <Link
-              href="/posts/create"
-              className="flex-1 md:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-copper text-white rounded-xl text-xs font-semibold hover:bg-copper-600 transition-all shadow-subtle"
-            >
-              <PlusCircle className="w-4 h-4" />
-              <span>Publish Work</span>
-            </Link>
+            {profile?.role !== "admin" && (
+              <Link
+                href="/posts/create"
+                className="flex-1 md:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-copper text-white rounded-xl text-xs font-semibold hover:bg-copper-600 transition-all shadow-subtle"
+              >
+                <PlusCircle className="w-4 h-4" />
+                <span>Publish Work</span>
+              </Link>
+            )}
             <Link
               href="/explore"
               className="flex-1 md:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2.5 border border-parchment-border bg-cream-50 hover:bg-cream-100 rounded-xl text-xs font-semibold text-espresso transition-all"

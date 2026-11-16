@@ -2,30 +2,54 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient as createServerSupabase } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
+async function getAuthenticatedAdmin(request: NextRequest) {
+  const adminClient = createAdminClient();
+  let user = null;
+
+  // 1. Try Authorization header
+  const authHeader = request.headers.get("Authorization") || request.headers.get("authorization");
+  if (authHeader && authHeader.startsWith("Bearer ")) {
+    const token = authHeader.substring(7);
+    const { data } = await adminClient.auth.getUser(token);
+    user = data.user;
+  }
+
+  // 2. Try cookie session
+  if (!user) {
+    try {
+      const supabase = createServerSupabase();
+      const { data } = await supabase.auth.getUser();
+      user = data.user;
+    } catch (e) {
+      // Fallback
+    }
+  }
+
+  if (!user) return null;
+
+  // Check admin role
+  const { data: profile } = await adminClient
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (profile?.role !== "admin") return null;
+
+  return user;
+}
+
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createServerSupabase();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Verify caller is admin
-    const { data: callerProfile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-
-    if (callerProfile?.role !== "admin") {
+    const adminUser = await getAuthenticatedAdmin(request);
+    if (!adminUser) {
       return NextResponse.json({ error: "Forbidden: Admin privileges required" }, { status: 403 });
     }
 
     const adminClient = createAdminClient();
     const { data: users, error } = await adminClient
       .from("profiles")
-      .select("id, full_name, role, city, guru_status, is_verified, is_suspended, suspended_at, created_at")
+      .select("id, full_name, role, city, guru_status, is_verified, is_suspended, suspended_at, created_at, avatar_url")
       .neq("role", "admin")
       .order("created_at", { ascending: false });
 
@@ -42,21 +66,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createServerSupabase();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized: Please sign in" }, { status: 401 });
-    }
-
-    // Verify caller has admin role
-    const { data: callerProfile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-
-    if (callerProfile?.role !== "admin") {
+    const adminUser = await getAuthenticatedAdmin(request);
+    if (!adminUser) {
       return NextResponse.json({ error: "Forbidden: Admin privileges required" }, { status: 403 });
     }
 
@@ -68,7 +79,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Rule 1: Admins cannot suspend themselves
-    if (userId === user.id) {
+    if (userId === adminUser.id) {
       return NextResponse.json({ error: "Admins cannot suspend themselves" }, { status: 400 });
     }
 
@@ -118,7 +129,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: isSuspending 
-        ? `${targetProfile.full_name} has been suspended.`
+        ? `${targetProfile.full_name} has been suspended and removed from public listings.`
         : `${targetProfile.full_name} has been reactivated.`,
       profile: updatedProfile,
     });

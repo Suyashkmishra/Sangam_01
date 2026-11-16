@@ -6,6 +6,7 @@ import { MessageSquare, Send, Loader2, User } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Comment, Profile } from "@/lib/types/database.types";
 import { RoleBadge } from "@/components/common/Badge";
+import { Avatar } from "@/components/ui/Avatar";
 
 interface CommentSectionProps {
   postId: string;
@@ -44,7 +45,7 @@ export function CommentSection({
           user_id: currentUserId,
           body: commentBody,
         })
-        .select("*, author:profiles(*)")
+        .select("*, author:profiles!comments_user_id_fkey(*)")
         .single();
 
       if (error) throw error;
@@ -149,17 +150,12 @@ export function CommentSection({
                   href={`/profile/${comment.author?.id || comment.user_id}`}
                   className="flex items-center gap-2 group"
                 >
-                  {comment.author?.avatar_url ? (
-                    <img
-                      src={comment.author.avatar_url}
-                      alt={comment.author.full_name}
-                      className="w-7 h-7 rounded-full object-cover border border-parchment-border"
-                    />
-                  ) : (
-                    <div className="w-7 h-7 rounded-full bg-copper-100 text-copper-800 flex items-center justify-center text-xs font-bold font-serif">
-                      {comment.author?.full_name?.charAt(0).toUpperCase() || "A"}
-                    </div>
-                  )}
+                  <Avatar
+                    name={comment.author?.full_name}
+                    avatarUrl={comment.author?.avatar_url}
+                    role={comment.author?.role}
+                    size="xs"
+                  />
                   <span className="text-xs font-bold text-espresso group-hover:text-copper transition-colors">
                     {comment.author?.full_name || "Artist"}
                   </span>

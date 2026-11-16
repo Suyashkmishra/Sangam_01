@@ -20,6 +20,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Post, Profile, Comment } from "@/lib/types/database.types";
 import { Navbar } from "@/components/layout/Navbar";
 import { RoleBadge } from "@/components/common/Badge";
+import { Avatar } from "@/components/ui/Avatar";
 import { LikeButton } from "@/components/posts/LikeButton";
 import { MediaRenderer } from "@/components/posts/MediaRenderer";
 import { CommentSection } from "@/components/posts/CommentSection";
@@ -62,7 +63,7 @@ export default function PostDetailPage() {
         // Fetch post with author
         const { data: postData, error: postErr } = await supabase
           .from("posts")
-          .select("*, author:profiles(*)")
+          .select("*, author:profiles!posts_author_id_fkey(*)")
           .eq("id", postId)
           .single();
 
@@ -78,7 +79,7 @@ export default function PostDetailPage() {
         // Fetch comments with author
         const { data: commentsData } = await supabase
           .from("comments")
-          .select("*, author:profiles(*)")
+          .select("*, author:profiles!comments_user_id_fkey(*)")
           .eq("post_id", postId)
           .order("created_at", { ascending: true });
 
@@ -214,17 +215,12 @@ export default function PostDetailPage() {
               href={`/profile/${author?.id || post.author_id}`}
               className="flex items-center gap-3.5 group"
             >
-              {author?.avatar_url ? (
-                <img
-                  src={author.avatar_url}
-                  alt={author.full_name}
-                  className="w-12 h-12 rounded-2xl object-cover border border-parchment-border flex-shrink-0"
-                />
-              ) : (
-                <div className="w-12 h-12 rounded-2xl bg-copper-100 text-copper-800 flex items-center justify-center font-serif text-xl font-bold flex-shrink-0">
-                  {author?.full_name?.charAt(0) || "A"}
-                </div>
-              )}
+              <Avatar
+                name={author?.full_name}
+                avatarUrl={author?.avatar_url}
+                role={author?.role}
+                size="lg"
+              />
               <div>
                 <div className="flex items-center gap-2">
                   <h3 className="text-sm font-bold text-espresso group-hover:text-copper transition-colors">

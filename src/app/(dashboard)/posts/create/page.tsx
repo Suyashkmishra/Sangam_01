@@ -51,6 +51,19 @@ export default function CreatePostPage() {
         router.push("/login");
         return;
       }
+
+      // Admins have no creating role: redirect directly to dashboard
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+
+      if (profile?.role === "admin") {
+        router.push("/dashboard");
+        return;
+      }
+
       setUser(user);
       setLoading(false);
     }
@@ -125,6 +138,17 @@ export default function CreatePostPage() {
     setErrorMsg("");
 
     try {
+      // Guard: Admins cannot publish works
+      const { data: callerProfile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+
+      if (callerProfile?.role === "admin") {
+        throw new Error("Admins are restricted from publishing works.");
+      }
+
       let finalMediaUrl: string | null = uploadedUrl;
       let finalMediaType: MediaType = mediaType;
 
