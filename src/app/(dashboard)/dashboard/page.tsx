@@ -24,6 +24,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { PendingGuruBanner } from "@/components/layout/PendingGuruBanner";
 import { RoleBadge } from "@/components/common/Badge";
 import { Avatar } from "@/components/ui/Avatar";
+import { AdminDashboardView } from "@/components/admin/AdminDashboardView";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -135,6 +136,16 @@ export default function DashboardPage() {
     );
   }
 
+  // Dedicated Admin Dashboard for role === 'admin'
+  if (profile?.role === "admin") {
+    return (
+      <div className="min-h-screen bg-cream flex flex-col">
+        <Navbar />
+        <AdminDashboardView user={user} profile={profile} />
+      </div>
+    );
+  }
+
   const isPendingGuru = profile?.role === "guru" && (!profile.is_verified || profile.guru_status === "pending");
 
   return (
@@ -180,15 +191,13 @@ export default function DashboardPage() {
           </div>
 
           <div className="flex items-center gap-3 w-full md:w-auto">
-            {profile?.role !== "admin" && (
-              <Link
-                href="/posts/create"
-                className="flex-1 md:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-copper text-white rounded-xl text-xs font-semibold hover:bg-copper-600 transition-all shadow-subtle"
-              >
-                <PlusCircle className="w-4 h-4" />
-                <span>Publish Work</span>
-              </Link>
-            )}
+            <Link
+              href="/posts/create"
+              className="flex-1 md:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-copper text-white rounded-xl text-xs font-semibold hover:bg-copper-600 transition-all shadow-subtle"
+            >
+              <PlusCircle className="w-4 h-4" />
+              <span>Publish Work</span>
+            </Link>
             <Link
               href="/explore"
               className="flex-1 md:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2.5 border border-parchment-border bg-cream-50 hover:bg-cream-100 rounded-xl text-xs font-semibold text-espresso transition-all"
@@ -199,29 +208,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Admin Special Quick Action Card */}
-        {profile?.role === "admin" && (
-          <div className="bg-espresso text-cream-100 p-6 rounded-2xl shadow-floating flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-3.5">
-              <div className="w-12 h-12 rounded-xl bg-antiqueGold/20 border border-antiqueGold text-antiqueGold flex items-center justify-center flex-shrink-0">
-                <ShieldCheck className="w-6 h-6" />
-              </div>
-              <div>
-                <h3 className="font-serif text-lg font-bold">Admin Verification Sanctum</h3>
-                <p className="text-xs text-cream-200/80">
-                  You have <strong>{stats.pendingGurusCount} pending Guru application(s)</strong> awaiting curatorial lineage approval.
-                </p>
-              </div>
-            </div>
-            <Link
-              href="/admin"
-              className="px-5 py-2.5 bg-antiqueGold text-espresso font-semibold text-xs rounded-xl hover:bg-antiqueGold-light transition-all flex items-center gap-1.5 flex-shrink-0"
-            >
-              <span>Review Pending Gurus</span>
-              <ArrowUpRight className="w-4 h-4" />
-            </Link>
-          </div>
-        )}
+
 
         {/* Stats Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

@@ -4,13 +4,19 @@ export type PostCategory = "poetry" | "music";
 export type ContentLanguage = "Hindi" | "English" | "Kannada";
 export type MediaType = "video" | "audio" | "none";
 export type ConnectionStatus = "pending" | "accepted" | "rejected";
+export type PostStatus = "published" | "suspended" | "pending_review";
 export type NotificationType =
   | "like"
   | "comment"
   | "connect_request"
   | "connect_accepted"
   | "guru_approved"
-  | "guru_rejected";
+  | "guru_rejected"
+  | "post_suspended"
+  | "post_deleted"
+  | "post_resubmitted"
+  | "post_approved"
+  | "post_rejected";
 export type PaymentPlan = "shishya_onetime" | "guru_monthly";
 export type PaymentStatus = "paid" | "failed" | "pending";
 export type ContactChannel = "whatsapp" | "instagram" | "email";
@@ -49,6 +55,10 @@ export interface Post {
   media_url: string | null;
   media_type: MediaType;
   external_link: string | null;
+  status?: PostStatus;
+  moderation_reason?: string | null;
+  moderated_at?: string | null;
+  moderated_by?: string | null;
   created_at: string;
   // joined relations
   author?: Profile;
@@ -92,11 +102,26 @@ export interface Notification {
   type: NotificationType;
   post_id: string | null;
   connection_id: string | null;
+  post_title?: string | null;
+  reason?: string | null;
+  message?: string | null;
   is_read: boolean;
   created_at: string;
   actor?: Profile;
   post?: Post;
   connection?: Connection;
+}
+
+export interface AdminAction {
+  id: string;
+  admin_id: string | null;
+  action: string;
+  target_type: "post" | "user" | "guru";
+  target_id: string;
+  target_name?: string | null;
+  reason?: string | null;
+  created_at: string;
+  admin?: Profile;
 }
 
 export interface Payment {

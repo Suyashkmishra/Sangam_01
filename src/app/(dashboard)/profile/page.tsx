@@ -16,9 +16,11 @@ import {
   Save, 
   Feather, 
   Music, 
-  CreditCard,
-  AlertCircle,
-  GraduationCap
+  CreditCard, 
+  AlertCircle, 
+  GraduationCap,
+  ShieldAlert,
+  Send
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Profile, ProfileContact, Post, Connection, Payment } from "@/lib/types/database.types";
@@ -26,6 +28,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { RoleBadge } from "@/components/common/Badge";
 import { Avatar } from "@/components/ui/Avatar";
 import { PostCard } from "@/components/posts/PostCard";
+import { EditAndResubmitModal } from "@/components/posts/EditAndResubmitModal";
 
 export default function MyProfilePage() {
   const router = useRouter();
@@ -56,6 +59,10 @@ export default function MyProfilePage() {
   const [prefChannel, setPrefChannel] = useState<"whatsapp" | "instagram" | "email">("whatsapp");
   const [savingContacts, setSavingContacts] = useState(false);
   const [contactSavedMsg, setContactSavedMsg] = useState("");
+
+  // Post moderation editing state
+  const [editingPost, setEditingPost] = useState<Post | null>(null);
+  const [resubmitNotice, setResubmitNotice] = useState("");
 
   useEffect(() => {
     async function loadProfile() {
@@ -352,7 +359,22 @@ export default function MyProfilePage() {
 
         {/* 1. MY WORKS */}
         {activeTab === "works" && (
-          <div>
+          <div className="space-y-4">
+            {resubmitNotice && (
+              <div className="p-4 bg-green-50 border border-green-200 text-green-800 text-xs rounded-2xl flex items-center justify-between gap-2 shadow-subtle animate-in fade-in duration-150">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
+                  <span>{resubmitNotice}</span>
+                </div>
+                <button
+                  onClick={() => setResubmitNotice("")}
+                  className="text-xs text-green-700 hover:text-green-900 font-bold"
+                >
+                  &times;
+                </button>
+              </div>
+            )}
+
             {myPosts.length === 0 ? (
               <div className="bg-white p-12 rounded-2xl border border-parchment-border text-center space-y-3">
                 <Feather className="w-8 h-8 text-espresso/30 mx-auto" />
@@ -370,11 +392,46 @@ export default function MyProfilePage() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {myPosts.map((post) => (
-                  <PostCard
-                    key={post.id}
-                    post={post}
-                    currentUserId={user?.id}
-                  />
+                  <div key={post.id} className="flex flex-col">
+                    <PostCard
+                      post={post}
+                      currentUserId={user?.id}
+                    />
+
+                    {/* Suspended Moderation Card Banner */}
+                    {post.status === "suspended" && (
+                      <div className="mt-2.5 p-3.5 bg-red-50/90 border border-red-200 rounded-2xl shadow-subtle space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-red-800 bg-red-100/90 border border-red-300 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                            <ShieldAlert className="w-3.5 h-3.5 text-red-700" />
+                            <span>Suspended</span>
+                          </span>
+                          <button
+                            onClick={() => setEditingPost(post)}
+                            className="px-3 py-1 bg-copper hover:bg-copper-600 text-white rounded-xl text-xs font-semibold transition-all shadow-subtle flex items-center gap-1"
+                          >
+                            <span>Edit & Resubmit</span>
+                          </button>
+                        </div>
+                        {post.moderation_reason && (
+                          <p className="text-xs text-red-900/90 italic pl-1 leading-relaxed">
+                            Reason: {post.moderation_reason}
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Pending Review Badge */}
+                    {post.status === "pending_review" && (
+                      <div className="mt-2.5 p-3 bg-amber-50 border border-amber-200 rounded-2xl flex items-center justify-between shadow-subtle">
+                        <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-amber-800 bg-amber-100 border border-amber-300 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                          <Clock className="w-3.5 h-3.5 text-amber-700 animate-pulse" />
+                          <span>Pending Review</span>
+                        </span>
+                        <span className="text-[11px] text-amber-900/80 font-medium">Under guardian curation</span>
+                      </div>
+                    )}
+                  </div>
                 ))}
               </div>
             )}
@@ -645,6 +702,19 @@ export default function MyProfilePage() {
           </>
         )}
       </main>
+
+      {/* Edit & Resubmit Modal for Author */}
+      <EditAndResubmitModal
+        isOpen={!!editingPost}
+        post={editingPost}
+        onClose={() => setEditingPost(null)}
+        onSuccess={(msg) => {
+          setResubmitNotice(msg);
+          if (editingPost) {
+            setMyPosts(myPosts.map((p) => p.id === editingPost.id ? { ...p, status: "pending_review" } : p));
+          }
+        }}
+      />
     </div>
   );
 }

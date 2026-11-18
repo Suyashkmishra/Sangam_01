@@ -7,6 +7,7 @@ import { HeroBackground } from "@/components/home/HeroBackground";
 import { RunningPoetryStrip, PoetryCardItem } from "@/components/home/RunningPoetryStrip";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 // High quality fallback poetry items using only imaginary seeded works from Sangam artists
 const FALLBACK_POEMS: PoetryCardItem[] = [
@@ -83,8 +84,9 @@ async function getPoetryPosts(): Promise<PoetryCardItem[]> {
     const adminClient = createAdminClient();
     const { data: posts, error } = await adminClient
       .from("posts")
-      .select("id, title, category, language, body_text, author:profiles!posts_author_id_fkey(full_name, role, is_suspended, guru_status)")
+      .select("id, title, category, language, body_text, status, author:profiles!posts_author_id_fkey(full_name, role, is_suspended, guru_status)")
       .eq("category", "poetry")
+      .eq("status", "published")
       .order("created_at", { ascending: false });
 
     if (error || !posts || posts.length === 0) {
@@ -96,6 +98,7 @@ async function getPoetryPosts(): Promise<PoetryCardItem[]> {
         const author = p.author;
         if (!author || author.is_suspended) return false;
         if (author.role === "guru" && author.guru_status !== "approved") return false;
+        if (p.status !== "published") return false;
         return true;
       })
       .map((p: any) => {

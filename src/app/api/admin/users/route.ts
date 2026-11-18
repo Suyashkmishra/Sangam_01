@@ -72,15 +72,15 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { userId, action } = body;
+    const { userId, action, reason } = body;
 
-    if (!userId || !["suspend", "reactivate"].includes(action)) {
+    if (!userId || !["suspend", "reactivate", "guru_approve", "guru_reject"].includes(action)) {
       return NextResponse.json({ error: "Invalid request parameters" }, { status: 400 });
     }
 
     // Rule 1: Admins cannot suspend themselves
     if (userId === adminUser.id) {
-      return NextResponse.json({ error: "Admins cannot suspend themselves" }, { status: 400 });
+      return NextResponse.json({ error: "Admins cannot modify their own status here" }, { status: 400 });
     }
 
     const adminClient = createAdminClient();
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
     // Rule 2: Check target user - Admins cannot suspend another admin
     const { data: targetProfile, error: targetErr } = await adminClient
       .from("profiles")
-      .select("id, full_name, role, is_suspended")
+      .select("id, full_name, role, is_suspended, guru_status, is_verified")
       .eq("id", userId)
       .single();
 
@@ -97,7 +97,63 @@ export async function POST(request: NextRequest) {
     }
 
     if (targetProfile.role === "admin") {
-      return NextResponse.json({ error: "Admins cannot suspend another admin" }, { status: 403 });
+      return NextResponse.json({ error: "Admins cannot modify another admin" }, { status: 403 });
+    }
+
+    // Handle Guru Approval / Rejection
+    if (action === "guru_approve" || action === "guru_reject") {
+      const isApproved = action === "guru_approve";
+      const newStatus = isApproved ? "approved" : "rejected";
+
+      const { data: updatedProfile, error: updateErr } = await adminClient
+        .from("profiles")
+        .update({
+          guru_status: newStatus,
+          is_verified: isApproved,
+        })
+        .eq("id", userId)
+        .select()
+        .single();
+
+      if (updateErr) {
+        return NextResponse.json({ error: updateErr.message }, { status: 500 });
+      }
+
+      // Record in admin_actions
+      try {
+        await adminClient.from("admin_actions").insert({
+          admin_id: adminUser.id,
+          action: isApproved ? "guru_approved" : "guru_rejected",
+          target_type: "guru",
+          target_id: userId,
+          target_name: targetProfile.full_name,
+          reason: reason || (isApproved ? "Approved by curator" : "Did not meet verification criteria"),
+        });
+      } catch (logErr) {
+        console.warn("admin_actions insert notice:", logErr);
+      }
+
+      // Notify Guru
+      try {
+        await adminClient.from("notifications").insert({
+          user_id: userId,
+          actor_id: adminUser.id,
+          type: isApproved ? "guru_approved" : "guru_rejected",
+          message: isApproved
+            ? "Your application for Guru mentorship has been approved. You are now a Verified Guru on Sangam."
+            : `Your application for Guru mentorship was not approved. Reason: ${reason || "Did not meet lineage verification criteria."}`,
+        });
+      } catch (notifErr) {
+        console.warn("Notification insert notice:", notifErr);
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: isApproved
+          ? `Guru application for ${targetProfile.full_name} approved.`
+          : `Guru application for ${targetProfile.full_name} rejected.`,
+        profile: updatedProfile,
+      });
     }
 
     const isSuspending = action === "suspend";
@@ -117,7 +173,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: updateErr.message }, { status: 500 });
     }
 
-    // 2. Update Supabase Auth ban status so credentials fail at auth level
+    // 2. Record in admin_actions
+    try {
+      await adminClient.from("admin_actions").insert({
+        admin_id: adminUser.id,
+        action: isSuspending ? "user_suspended" : "user_reactivated",
+        target_type: "user",
+        target_id: userId,
+        target_name: targetProfile.full_name,
+        reason: reason || (isSuspending ? "Violated community guidelines" : "Reactivated by admin"),
+      });
+    } catch (logErr) {
+      console.warn("admin_actions insert notice:", logErr);
+    }
+
+    // 3. Update Supabase Auth ban status so credentials fail at auth level
     try {
       await adminClient.auth.admin.updateUserById(userId, {
         ban_duration: isSuspending ? "876000h" : "none",

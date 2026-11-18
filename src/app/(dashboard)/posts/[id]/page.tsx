@@ -14,7 +14,10 @@ import {
   Loader2, 
   ShieldAlert,
   CheckCircle2,
-  Clock
+  Clock,
+  Trash2,
+  AlertTriangle,
+  RotateCcw
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Post, Profile, Comment } from "@/lib/types/database.types";
@@ -25,6 +28,7 @@ import { LikeButton } from "@/components/posts/LikeButton";
 import { MediaRenderer } from "@/components/posts/MediaRenderer";
 import { CommentSection } from "@/components/posts/CommentSection";
 import { ConnectModal } from "@/components/connect/ConnectModal";
+import { AdminPostActionModal } from "@/components/admin/AdminPostActionModal";
 
 export default function PostDetailPage() {
   const params = useParams();
@@ -44,6 +48,11 @@ export default function PostDetailPage() {
   const [connectModalOpen, setConnectModalOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // Admin moderation controls
+  const [adminActionModal, setAdminActionModal] = useState<"suspend" | "delete" | "reject" | null>(null);
+  const [adminNotice, setAdminNotice] = useState("");
+  const [isRestoring, setIsRestoring] = useState(false);
 
   useEffect(() => {
     async function loadPostData() {
@@ -157,6 +166,58 @@ export default function PostDetailPage() {
     );
   }
 
+  const isPostSuspended = post.status === "suspended";
+  const isPostPendingReview = post.status === "pending_review";
+  const isAuthor = currentUser?.id === post.author_id;
+  const isAdmin = currentUserProfile?.role === "admin";
+
+  if ((isPostSuspended || isPostPendingReview) && !isAuthor && !isAdmin) {
+    return (
+      <div className="min-h-screen bg-cream flex flex-col">
+        <Navbar />
+        <main className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+          <div className="w-16 h-16 rounded-3xl bg-amber-50 text-amber-700 flex items-center justify-center mb-4 border border-amber-200">
+            <ShieldAlert className="w-8 h-8" />
+          </div>
+          <h2 className="font-serif text-2xl font-bold text-espresso mb-2">Work Under Moderation Review</h2>
+          <p className="text-xs text-espresso/60 max-w-sm mb-4">
+            This creation is currently not available for public view.
+          </p>
+          <Link href="/explore" className="px-5 py-2.5 bg-copper text-white rounded-xl text-xs font-semibold">
+            Return to Explore
+          </Link>
+        </main>
+      </div>
+    );
+  }
+
+  const handleRestoreOrApprove = async () => {
+    if (!post) return;
+    setIsRestoring(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch("/api/admin/posts", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+        },
+        body: JSON.stringify({
+          action: "restore",
+          postId: post.id,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to restore post");
+      setAdminNotice(data.message || "Post restored and published successfully.");
+      setPost({ ...post, status: "published", moderation_reason: null });
+    } catch (err: any) {
+      alert(err.message || "Failed to restore post");
+    } finally {
+      setIsRestoring(false);
+    }
+  };
+
   const isHindi = post.language === "Hindi";
   const isKannada = post.language === "Kannada";
   const scriptFont = isHindi
@@ -184,6 +245,94 @@ export default function PostDetailPage() {
             <span>Back to Confluence Archive</span>
           </Link>
         </div>
+
+        {adminNotice && (
+          <div className="mb-6 p-4 bg-green-50 border border-green-200 text-green-800 text-xs rounded-2xl flex items-center justify-between gap-2 shadow-subtle animate-in fade-in duration-150">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0" />
+              <span>{adminNotice}</span>
+            </div>
+            <button onClick={() => setAdminNotice("")} className="text-xs text-green-700 hover:text-green-900 font-bold">
+              &times;
+            </button>
+          </div>
+        )}
+
+        {/* Admin Moderation Management Bar */}
+        {isAdmin && (
+          <div className="mb-6 p-4 bg-espresso text-cream rounded-2xl shadow-subtle flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-espresso/20">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-antiqueGold/20 text-antiqueGold flex items-center justify-center flex-shrink-0">
+                <ShieldAlert className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-cream uppercase tracking-wider">Guardian Moderation</span>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
+                    post.status === "suspended"
+                      ? "bg-red-500/30 text-red-200 border border-red-400/30"
+                      : post.status === "pending_review"
+                      ? "bg-amber-500/30 text-amber-200 border border-amber-400/30"
+                      : "bg-green-500/30 text-green-200 border border-green-400/30"
+                  }`}>
+                    {post.status || "published"}
+                  </span>
+                </div>
+                {post.moderation_reason && (
+                  <p className="text-[11px] text-cream/70 mt-0.5">
+                    Reason: {post.moderation_reason}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 flex-wrap">
+              {post.status === "suspended" ? (
+                <button
+                  onClick={handleRestoreOrApprove}
+                  disabled={isRestoring}
+                  className="px-3 py-1.5 bg-green-700 hover:bg-green-800 text-white text-xs font-semibold rounded-xl transition-all flex items-center gap-1.5"
+                >
+                  {isRestoring ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCcw className="w-3.5 h-3.5" />}
+                  <span>Restore Post</span>
+                </button>
+              ) : post.status === "pending_review" ? (
+                <>
+                  <button
+                    onClick={handleRestoreOrApprove}
+                    disabled={isRestoring}
+                    className="px-3 py-1.5 bg-green-700 hover:bg-green-800 text-white text-xs font-semibold rounded-xl transition-all flex items-center gap-1.5"
+                  >
+                    {isRestoring ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                    <span>Approve</span>
+                  </button>
+                  <button
+                    onClick={() => setAdminActionModal("reject")}
+                    className="px-3 py-1.5 bg-amber-700 hover:bg-amber-800 text-white text-xs font-semibold rounded-xl transition-all flex items-center gap-1.5"
+                  >
+                    <span>Reject</span>
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => setAdminActionModal("suspend")}
+                  className="px-3 py-1.5 bg-amber-700 hover:bg-amber-800 text-white text-xs font-semibold rounded-xl transition-all flex items-center gap-1.5"
+                >
+                  <ShieldAlert className="w-3.5 h-3.5" />
+                  <span>Suspend post</span>
+                </button>
+              )}
+
+              <button
+                onClick={() => setAdminActionModal("delete")}
+                className="px-3 py-1.5 bg-red-800 hover:bg-red-900 text-white text-xs font-semibold rounded-xl transition-all flex items-center gap-1.5"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Delete permanently</span>
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Main Post Article Card */}
         <article className="bg-white rounded-3xl border border-parchment-border shadow-card p-6 sm:p-10">
@@ -357,6 +506,25 @@ export default function PostDetailPage() {
           isOpen={connectModalOpen}
           onClose={() => setConnectModalOpen(false)}
           onSuccess={() => setExistingConnection({ status: "pending" })}
+        />
+      )}
+      {/* Admin Post Action Modal */}
+      {isAdmin && (
+        <AdminPostActionModal
+          isOpen={!!adminActionModal}
+          action={adminActionModal}
+          post={post}
+          onClose={() => setAdminActionModal(null)}
+          onSuccess={(msg) => {
+            setAdminNotice(msg);
+            if (adminActionModal === "delete") {
+              setTimeout(() => router.push("/admin"), 1000);
+            } else if (adminActionModal === "suspend") {
+              setPost({ ...post, status: "suspended", moderation_reason: msg });
+            } else if (adminActionModal === "reject") {
+              setPost({ ...post, status: "suspended", moderation_reason: msg });
+            }
+          }}
         />
       )}
     </div>

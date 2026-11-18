@@ -3,6 +3,8 @@ import { createClient as createServerSupabase } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
 
 async function getCallerProfile(request: NextRequest) {
   const adminClient = createAdminClient();
@@ -106,16 +108,33 @@ export async function GET(
       console.error("Error fetching works for profile:", postsErr);
     }
 
-    const formattedPosts = (rawPosts || []).map((p: any) => ({
-      ...p,
-      likes_count: p.likes?.[0]?.count || 0,
-      comments_count: p.comments?.[0]?.count || 0,
-    }));
+    const isAuthorOrAdmin = caller?.id === targetProfile.id || caller?.role === "admin";
+    const formattedPosts = (rawPosts || [])
+      .filter((p: any) => {
+        // Author or Admin can view their own suspended or pending review posts
+        if (isAuthorOrAdmin) return true;
+        // Public viewers see only published posts
+        return p.status === "published";
+      })
+      .map((p: any) => ({
+        ...p,
+        likes_count: p.likes?.[0]?.count || 0,
+        comments_count: p.comments?.[0]?.count || 0,
+      }));
 
-    return NextResponse.json({
-      profile: sanitizedProfile,
-      posts: formattedPosts,
-    });
+    return NextResponse.json(
+      {
+        profile: sanitizedProfile,
+        posts: formattedPosts,
+      },
+      {
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0",
+          "Pragma": "no-cache",
+          "Expires": "0",
+        },
+      }
+    );
   } catch (err: any) {
     console.error("Profile API error:", err);
     return NextResponse.json(

@@ -15,7 +15,9 @@ import {
   Clock, 
   ArrowRight,
   ShieldCheck,
-  ShieldAlert
+  ShieldAlert,
+  Trash2,
+  FileText
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Notification, Profile, Post, Connection } from "@/lib/types/database.types";
@@ -261,6 +263,31 @@ export default function NotificationsPage() {
                           <ShieldAlert className="w-4 h-4" />
                         </div>
                       )}
+                      {notif.type === "post_suspended" && (
+                        <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center">
+                          <ShieldAlert className="w-4 h-4" />
+                        </div>
+                      )}
+                      {notif.type === "post_deleted" && (
+                        <div className="w-9 h-9 rounded-xl bg-red-100 text-red-700 flex items-center justify-center">
+                          <Trash2 className="w-4 h-4" />
+                        </div>
+                      )}
+                      {notif.type === "post_resubmitted" && (
+                        <div className="w-9 h-9 rounded-xl bg-copper-100 text-copper-800 flex items-center justify-center">
+                          <Clock className="w-4 h-4" />
+                        </div>
+                      )}
+                      {notif.type === "post_approved" && (
+                        <div className="w-9 h-9 rounded-xl bg-green-100 text-green-800 flex items-center justify-center">
+                          <CheckCircle className="w-4 h-4" />
+                        </div>
+                      )}
+                      {notif.type === "post_rejected" && (
+                        <div className="w-9 h-9 rounded-xl bg-red-100 text-red-800 flex items-center justify-center">
+                          <XCircle className="w-4 h-4" />
+                        </div>
+                      )}
                     </div>
 
                     {/* Content */}
@@ -339,6 +366,36 @@ export default function NotificationsPage() {
                           <>
                             Your Guru application was not approved by the council at this time. You can continue publishing as an artist.
                           </>
+                        )}
+
+                        {notif.type === "post_suspended" && (
+                          <span>
+                            {notif.message || `Your post '${notif.post_title || notif.post?.title || "your work"}' was suspended by the admin. Reason: ${notif.reason || "Under review"}. You can edit it and resubmit it.`}
+                          </span>
+                        )}
+
+                        {notif.type === "post_deleted" && (
+                          <span>
+                            {notif.message || `Your post '${notif.post_title || "your work"}' was removed by the admin. Reason: ${notif.reason || "Policy violation"}. You are welcome to publish a new post.`}
+                          </span>
+                        )}
+
+                        {notif.type === "post_resubmitted" && (
+                          <span>
+                            {notif.message || `${notif.actor?.full_name || "An artist"} resubmitted '${notif.post_title || notif.post?.title || "creation"}' for moderation review.`}
+                          </span>
+                        )}
+
+                        {notif.type === "post_approved" && (
+                          <span>
+                            {notif.message || `Your post '${notif.post_title || notif.post?.title || "your work"}' has been approved by the admin and published.`}
+                          </span>
+                        )}
+
+                        {notif.type === "post_rejected" && (
+                          <span>
+                            {notif.message || `Your resubmission for '${notif.post_title || notif.post?.title || "your work"}' was rejected by the admin. Reason: ${notif.reason || "Needs further revision"}.`}
+                          </span>
                         )}
                       </p>
 

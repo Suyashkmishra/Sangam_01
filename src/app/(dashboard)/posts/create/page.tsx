@@ -175,8 +175,16 @@ export default function CreatePostPage() {
 
       if (error) throw error;
 
-      router.push(`/posts/${post.id}`);
+      // Invalidate caches across Explore, Landing Page poetry strip, and Profile
+      try {
+        const revalSecret = process.env.NEXT_PUBLIC_REVALIDATE_SECRET || "sangam_revalidate_secret_2026";
+        await fetch(`/api/revalidate?secret=${revalSecret}`, { method: "POST" });
+      } catch (revalErr) {
+        console.warn("Revalidation call failed:", revalErr);
+      }
+
       router.refresh();
+      router.push(`/posts/${post.id}`);
     } catch (err: any) {
       console.error("Post creation error:", err);
       setErrorMsg(err.message || "Failed to publish work.");

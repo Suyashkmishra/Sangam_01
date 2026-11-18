@@ -55,8 +55,14 @@ export default function ExplorePage() {
           }
         }
 
-        // Fetch posts via explore endpoint
-        const postsRes = await fetch("/api/explore/posts");
+        // Fetch posts via explore endpoint (cache-busting to guarantee fresh feed)
+        const postsRes = await fetch(`/api/explore/posts?t=${Date.now()}`, {
+          cache: "no-store",
+          headers: {
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            Pragma: "no-cache",
+          },
+        });
         const postsJson = await postsRes.json();
         const postsData = postsJson.posts || [];
 

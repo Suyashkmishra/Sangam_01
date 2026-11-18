@@ -45,13 +45,24 @@ EXCEPTION
 END $$;
 
 DO $$ BEGIN
+    CREATE TYPE post_status AS ENUM ('published', 'suspended', 'pending_review');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
     CREATE TYPE notification_type AS ENUM (
         'like', 
         'comment', 
         'connect_request', 
         'connect_accepted', 
         'guru_approved', 
-        'guru_rejected'
+        'guru_rejected',
+        'post_suspended',
+        'post_deleted',
+        'post_resubmitted',
+        'post_approved',
+        'post_rejected'
     );
 EXCEPTION
     WHEN duplicate_object THEN null;
@@ -114,6 +125,10 @@ CREATE TABLE IF NOT EXISTS public.posts (
     media_url TEXT,
     media_type media_type_enum NOT NULL DEFAULT 'none',
     external_link TEXT,
+    status post_status NOT NULL DEFAULT 'published',
+    moderation_reason TEXT,
+    moderated_at TIMESTAMPTZ,
+    moderated_by UUID REFERENCES public.profiles(id),
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -121,6 +136,7 @@ CREATE INDEX IF NOT EXISTS idx_posts_author ON public.posts(author_id);
 CREATE INDEX IF NOT EXISTS idx_posts_category ON public.posts(category);
 CREATE INDEX IF NOT EXISTS idx_posts_language ON public.posts(language);
 CREATE INDEX IF NOT EXISTS idx_posts_created_at ON public.posts(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_posts_status ON public.posts(status);
 
 -- 6. LIKES TABLE
 CREATE TABLE IF NOT EXISTS public.likes (
@@ -165,14 +181,32 @@ CREATE TABLE IF NOT EXISTS public.notifications (
     user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE, -- recipient
     actor_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE, -- initiator
     type notification_type NOT NULL,
-    post_id UUID REFERENCES public.posts(id) ON DELETE CASCADE,
+    post_id UUID REFERENCES public.posts(id) ON DELETE SET NULL,
     connection_id UUID REFERENCES public.connections(id) ON DELETE CASCADE,
+    post_title TEXT,
+    reason TEXT,
+    message TEXT,
     is_read BOOLEAN NOT NULL DEFAULT false,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE INDEX IF NOT EXISTS idx_notifications_user_read ON public.notifications(user_id, is_read);
 CREATE INDEX IF NOT EXISTS idx_notifications_created_at ON public.notifications(created_at DESC);
+
+-- 9.1 ADMIN_ACTIONS TABLE (Audit Trail for Moderation & Admin Operations)
+CREATE TABLE IF NOT EXISTS public.admin_actions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    admin_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+    action TEXT NOT NULL,
+    target_type TEXT NOT NULL,
+    target_id TEXT NOT NULL,
+    target_name TEXT,
+    reason TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_admin_actions_created_at ON public.admin_actions(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_admin_actions_target ON public.admin_actions(target_type, target_id);
 
 -- 10. PAYMENTS TABLE (Mock Auditing)
 CREATE TABLE IF NOT EXISTS public.payments (
@@ -434,6 +468,66 @@ CREATE TRIGGER trg_notify_guru_status
     AFTER UPDATE OF guru_status ON public.profiles
     FOR EACH ROW
     EXECUTE FUNCTION public.notify_on_guru_status_change();
+
+-- 5. TRIGGER: Prevent non-admins from modifying moderation fields
+CREATE OR REPLACE FUNCTION public.protect_post_moderation_fields()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    is_admin BOOLEAN := false;
+    current_user_role TEXT;
+BEGIN
+    BEGIN
+        current_user_role := current_setting('role', true);
+    EXCEPTION WHEN OTHERS THEN
+        current_user_role := '';
+    END;
+
+    -- Allow service_role key to bypass restrictions
+    IF current_user_role = 'service_role' THEN
+        RETURN NEW;
+    END IF;
+
+    -- Check if authenticated user is admin
+    SELECT (role = 'admin') INTO is_admin
+    FROM public.profiles
+    WHERE id = auth.uid();
+
+    IF NOT COALESCE(is_admin, false) THEN
+        -- If status changed
+        IF (NEW.status IS DISTINCT FROM OLD.status) THEN
+            -- Only permitted author transition: suspended -> pending_review
+            IF (OLD.status = 'suspended' AND NEW.status = 'pending_review' AND auth.uid() = OLD.author_id) THEN
+                NEW.moderated_at := OLD.moderated_at;
+                NEW.moderated_by := OLD.moderated_by;
+                NEW.moderation_reason := OLD.moderation_reason;
+            ELSE
+                RAISE EXCEPTION 'Unauthorized: Only admins can modify post publication status.';
+            END IF;
+        END IF;
+
+        -- Non-admin cannot alter moderation fields directly under any circumstance
+        IF (NEW.moderation_reason IS DISTINCT FROM OLD.moderation_reason) THEN
+            RAISE EXCEPTION 'Unauthorized: Only admins can modify moderation reason.';
+        END IF;
+
+        IF (NEW.moderated_at IS DISTINCT FROM OLD.moderated_at) OR (NEW.moderated_by IS DISTINCT FROM OLD.moderated_by) THEN
+            RAISE EXCEPTION 'Unauthorized: Only admins can set moderated_at or moderated_by.';
+        END IF;
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_protect_post_moderation_fields ON public.posts;
+CREATE TRIGGER trg_protect_post_moderation_fields
+    BEFORE UPDATE ON public.posts
+    FOR EACH ROW
+    EXECUTE FUNCTION public.protect_post_moderation_fields();
 
 -- ==============================================================================
 -- ROW LEVEL SECURITY (RLS) POLICIES
